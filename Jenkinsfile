@@ -8,7 +8,9 @@ pipeline{
 	  }
    }	  
    stage("Hello Calsoft"){
-     step echo "Hello Everyone"
+	   steps {
+		sh 'echo "Hello Everyone"'
+	   }
      }
   } 
 }
