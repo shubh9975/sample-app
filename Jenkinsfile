@@ -53,8 +53,7 @@ pipeline{
           dir('cart/src'){
            sh '''
               echo 'Running vetting'
-              //go vet $(go list ./... | grep -v generated)
-	      go vet cart/src
+              go vet $(go list cart/src | grep -v generated)
               echo 'Running linting'
               //golint $(go list ./... | grep -v generated)
               echo 'Running go formatting'
