@@ -53,7 +53,6 @@ pipeline{
           dir('cart/src'){
            sh '''
               echo 'Sending reports to the sonarqube'
-              //sonar-scanner
            '''
           }
         }
