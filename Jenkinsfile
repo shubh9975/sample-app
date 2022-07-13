@@ -52,7 +52,6 @@ pipeline{
         withEnv(["PATH+GO=${GOPATH}/bin"]){
           dir('cart/src'){
            sh '''
-	      //go mod init cart/src
               echo 'Running vetting'
               //go vet $(go list ./... | grep -v generated)
               echo 'Running linting'
