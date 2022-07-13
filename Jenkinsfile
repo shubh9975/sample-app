@@ -38,7 +38,7 @@ pipeline{
               sudo docker system prune -f
               echo 'Installing dependencies'
               go version
-	      go mod init test
+	      go mod init cart/src
               go get -u golang.org/x/lint/golint
               go install github.com/securego/gosec/v2/cmd/gosec@latest
               #go get -u github.com/securego/gosec/cmd/gosec
@@ -52,7 +52,7 @@ pipeline{
         withEnv(["PATH+GO=${GOPATH}/bin"]){
           dir('cart/src'){
            sh '''
-	      go mod init test
+	      go mod init cart/src
               echo 'Running vetting'
               go vet $(go list ./... | grep -v generated)
               echo 'Running linting'
