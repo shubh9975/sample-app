@@ -61,10 +61,11 @@ pipeline{
    stage("Image Building"){
      steps{
         script{
+	  dir('cart/'){
           sh '''
 	      sudo docker build -t myimage cart/Dockerfile
 	  '''
-
+	  }
         }
      }
    }
