@@ -35,7 +35,7 @@ pipeline{
      steps {
         withEnv(["PATH+GO=${GOPATH}/bin"]){
            sh '''
-              docker system prune -f
+              sudo docker system prune -f
               echo 'Installing dependencies'
               go version
               go get -u golang.org/x/lint/golint
