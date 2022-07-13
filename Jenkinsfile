@@ -53,9 +53,19 @@ pipeline{
           dir('cart/src'){
            sh '''
               echo 'Sending reports to the sonarqube'
-              sonar-scanner
+              //sonar-scanner
            '''
           }
+        }
+     }
+   }
+   stage("Image Building"){
+     steps{
+        script{
+          sh '''
+	      sudo docker build -t myimage .
+	  '''
+
         }
      }
    }
