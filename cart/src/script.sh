@@ -1,0 +1,3 @@
+#!/bin/bash
+gosec -fmt=sonarqube -out report.json ./...
+/usr/local/sonar-scanner/bin/sonar-scanner

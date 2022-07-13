@@ -1,0 +1,94 @@
+pipeline{
+  environment {  
+    BRANCH_NAME = "${GIT_BRANCH.split("/")[1]}"
+    REPOURL = "http://3.111.9.246:5001/repository/adapt/"
+    REGISTRYCRED = "registrycred"
+}
+  stages {
+   stage("Opening"){
+         steps{
+            //Welcome message
+            script{
+               sh "echo 'Welcome to Jenkins'"
+}
+}
+}
+
+   stage("Workspace_cleanup"){
+        //Cleaning WorkSpace
+        steps{
+            step([$class: 'WsCleanup'])
+}
+}
+
+   stage("Repo_clone"){
+       //Clone repo from GitHub
+      steps {
+         checkout ([$class: 'GitSCM', branches: [[name: '*/*']], userRemoteConfigs: [[credentialsId: 'jenkins', url: 'git clone git@bitbucket.org:adapt-bfctech/test-demo.git']]])
+
+}
+}
+  
+  stage("static analysis delivery"){
+    parallel {
+      stage("performing linting"){
+        steps {
+          echo "run-tests.bat"
+          }
+       stage("perform unit test"){
+       steps{
+         echo "performing unit testing"     
+          }
+} 
+}
+}
+}
+   stage("unit testing delivery"){
+     steps{
+     script{
+      sh '''
+           echo "performing step unit testing"
+      '''
+}
+}
+}
+
+  stage("Image Building delivery"){
+     when { 
+         expression { 
+             return env.BRANCH_NAME = 'dev' || env.BRANCH_NAME = 'master';
+        }
+      }
+     steps{
+      script{
+       bitbucketStatusNotify(buildState: 'FAILED', credentialsId: 'jenkins')
+          dockerImage = docker.build REPOURL:V2.0.0
+       
+
+         bitbucketStatusNotify(buildState: 'SUCCESSFUL', credentialsId: 'jenkins')
+}
+}
+}
+  stage("Image scanning delivery"){
+      when {
+         expression {
+             return env.BRANCH_NAME = 'dev' || env.BRANCH_NAME = 'master';
+        }
+      }
+
+     steps{
+      script{
+       bitbucketStatusNotify(buildState: 'FAILED', credentialsId: 'jenkins')
+            trivy image 3.111.9.246:8081/adapt:v1
+            docker.writeRegistry('', REGISTRYCRED){
+            dockerImage.push()
+}
+         bitbucketStatusNotify(buildState: 'SUCCESSFUL', credentialsId: 'jenkins')
+}
+}
+}
+  
+
+}
+}
+

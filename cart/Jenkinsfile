@@ -1,0 +1,275 @@
+pipeline{ 
+  agent any
+  environment {
+    uRLWEBHOOK = "https://bfcindia.webhook.office.com/webhookb2/18b18bbb-c20e-4c25-9a90-71936337e05f@f1251ac1-12f6-435a-9795-54df89862df1/JenkinsCI/239a29e64c1b4ffe8fa324a1316648cb/a72bb36f-1a21-4c80-a746-5fe2a5005ee4"
+    BRANCH_NAME = "${GIT_BRANCH.split("/")[1]}"
+    REPOURL = "adapt-registry:5003/repository/goadapt/"
+    registrycred = 'registrycred'
+    dockerImage = ''
+    BASE_DIR = "${pwd}"
+    GO114MODULE = 'on'
+    CGO_ENABLED = 0 
+    GOPATH = "${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${BUILD_ID}"
+    EMAIL="shubham.tamboli@bfctech.io"
+    TAG= "v1.1.1"
+  }
+  options {
+   office365ConnectorWebhooks([
+     [name: "Office 365", 
+     url: "https://bfcindia.webhook.office.com/webhookb2/18b18bbb-c20e-4c25-9a90-71936337e05f@f1251ac1-12f6-435a-9795-54df89862df1/JenkinsCI/239a29e64c1b4ffe8fa324a1316648cb/a72bb36f-1a21-4c80-a746-5fe2a5005ee4",
+     notifyBackToNormal: true, notifyFailure: true, notifyRepeatedFailure: true, notifySuccess: true, notifyAborted: true]
+     ])
+  }
+  stages {
+   stage("Workspace_cleanup"){
+        //Cleaning WorkSpace
+     steps{
+        step([$class: 'WsCleanup'])
+     }
+   }
+   stage("Repo_clone"){
+       //Clone repo from GitHub
+     steps {
+          checkout ([$class: 'GitSCM', branches: [[name: '*/*']], userRemoteConfigs: [[credentialsId: 'jenkins', url: 'git@bitbucket.org:adapt-bfctech/adapt-pipeline.git']]])
+        //script{
+          //TAG = "${sh(script:'git describe --tags',returnStatus: true)}"
+        //}
+     } 
+   }
+   stage('Pre dependaencies.') {
+     steps {
+        withEnv(["PATH+GO=${GOPATH}/bin"]){
+           sh '''
+              docker system prune -f
+              echo 'Installing dependencies'
+              go version
+              go get -u golang.org/x/lint/golint
+              go install github.com/securego/gosec/v2/cmd/gosec@latest
+              #go get -u github.com/securego/gosec/cmd/gosec
+              export PATH="/usr/local/sonar-scanner/bin:$PATH"
+           '''
+        }
+     }
+   }
+   stage("static analysis"){
+     steps{
+        withEnv(["PATH+GO=${GOPATH}/bin"]){
+          dir('cart/src'){
+           sh ''' 
+              go mod init cart/src
+              echo 'Running vetting'
+              go vet $(go list ./... | grep -v generated)
+              echo 'Running linting'
+              golint $(go list ./... | grep -v generated)
+              echo 'Running go formatting'
+              go fmt $(go list ./... | grep -v generated)
+              echo 'Running gosec'
+              gosec -fmt=sonarqube -out report.json ./...
+              echo 'Sending reports to the sonarqube'
+              sonar-scanner 
+           '''
+          }
+        }
+     }
+   }
+   stage("Unit testing"){
+     steps{
+        script{
+          dir('cart/src'){ 
+           sh 'go test -short -coverprofile=./cov.out'
+          }   
+        }
+     }   
+   }
+   stage("Security testing with gosec+sonarqube"){
+     steps{
+        script{
+          dir('cart/src'){
+           sh '''
+              echo 'Running gosec' 
+              gosec -fmt=sonarqube -out report.json ./...
+              echo 'Sending reports to the sonarqube '
+              sonar-scanner
+           '''
+          }
+        }
+     }
+   }
+   stage("Image Building"){
+     when { expression {
+          return env.BRANCH_NAME == 'dev' || env.BRANCH_NAME == 'qa' || env.BRANCH_NAME == 'master';
+        }
+     }
+     steps{
+        script{
+          dockerImage = docker.build (REPOURL + env.BRANCH_NAME, "-f cart/Dockerfile .")
+          emailext body: 'A Test EMail', recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: 'Test'
+
+        }
+     }
+   }
+   stage("imageTagging"){
+     parallel {
+        stage("TaggingToDev"){
+         when {
+          expression {
+            return env.BRANCH_NAME == 'dev';
+          }
+         }
+         steps {
+          script{
+            sh "echo retag image for dev"
+            sh "docker tag $REPOURL$BRANCH_NAME:latest $REPOURL$BRANCH_NAME:dev.$BUILD_NUMBER"
+          }
+         }
+        }
+
+        stage("Tagging To qa"){
+         when {
+          expression {
+            return env.BRANCH_NAME == 'qa';
+          }
+         }
+         steps {
+          script{
+            sh "echo retag image for qa"
+            sh "docker tag $REPOURL$BRANCH_NAME:latest $REPOURL$BRANCH_NAME:qa.$BUILD_NUMBER"
+          }
+         }
+        }
+
+        stage("TaggingToMaster"){
+         when {
+          expression {
+            return env.BRANCH_NAME == 'master';
+          }
+         }
+         steps{
+          script{
+            sh "echo retag image for master"
+            sh "docker tag $REPOURL$BRANCH_NAME:latest $REPOURL$BRANCH_NAME:$TAG"
+            sh "docker images "
+          }
+         }
+        }
+     }
+   }
+   stage("Scanning Docker images"){
+     parallel {
+        stage("Scan docker image IfDevBranch"){
+         when {
+          expression {
+            return env.BRANCH_NAME == 'dev';
+          }
+         }
+         steps {
+            echo "dev env is scanning now...."
+            sh 'trivy image $REPOURL$BRANCH_NAME:dev.$BUILD_NUMBER'
+            //aquaMicroscanner imageName: '$REPOURL$BRANCH_NAME:dev.$BUILD_NUMBER', notCompliesCmd: 'exit 4', onDisallowed: 'fail', outputFormat: 'html'
+         }
+        }
+       stage("Scan docker image IfQABranch"){
+         when {
+          expression {
+            return env.BRANCH_NAME == 'qa';
+          }
+         }
+         steps {
+            echo "QA env is scanning now...."
+            sh 'trivy image $REPOURL$BRANCH_NAME:qa.$BUILD_NUMBER'
+            //aquaMicroscanner imageName: '$REPOURL$BRANCH_NAME:qa.$BUILD_NUMBER', notCompliesCmd: 'exit 4', onDisallowed: 'fail', outputFormat: 'html'
+         }
+        }
+        stage("Scan docker image IfMasterBranch"){
+         when {
+          expression {
+            return env.BRANCH_NAME == 'master';
+          }
+         }
+         steps{
+            echo "master env is scanning now...."
+            sh 'trivy image $REPOURL$BRANCH_NAME:$TAG'
+            //aquaMicroscanner imageName: '$REPOURL$BRANCH_NAME:$TAG', notCompliesCmd: 'exit 4', onDisallowed: 'fail', outputFormat: 'html'
+         }
+        }
+     }
+   }
+   //stage("scan a docker image"){
+     //steps{
+        //script{
+          //sh 'Scan container image $REPOURL$BRANCH_NAME:${TAG}'
+          //sh 'trivy image --severity "CRITICAL" $REPOURL$BRANCH_NAME:${TAG}' 
+          //sh "echo trivy scanning."
+        //}
+     //}
+   //}
+   stage("image Push"){
+     parallel {
+        stage("push To Dev env"){
+         when {
+          expression {
+            return env.BRANCH_NAME == 'dev';
+          }
+         }
+         steps {
+          script{
+            sh "docker push $REPOURL$BRANCH_NAME:dev.$BUILD_NUMBER"
+          }
+         }
+        }
+
+       stage("push To qa env"){
+         when {
+          expression {
+            return env.BRANCH_NAME == 'qa';
+          }
+         }
+         steps {
+          script{
+            sh "docker push $REPOURL$BRANCH_NAME:qa.$BUILD_NUMBER"
+          }
+         }
+        }
+
+        stage("push To Master env"){
+         when {
+          expression {
+            return env.BRANCH_NAME == 'master';
+          }
+         }
+         steps{
+          script{
+            sh "docker push $REPOURL$BRANCH_NAME:${TAG}"
+          }
+         }
+        }
+     }
+   }
+   stage ('Invoke_CD_pipeline') {
+     when {
+        expression {
+          return env.BRANCH_NAME == 'dev' || env.BRANCH_NAME == 'qa' || env.BRANCH_NAME == 'master';
+        }
+     }
+            steps {
+                //build job: 'microservice01-cd', parameters: [string(name: 'GIT_BRANCH_NAME', value: env.BRANCH_NAME)]
+                build job: 'microservice01-cd', propagate: false, wait: false, parameters: [[$class: 'StringParameterValue', name: 'BRANCH_NAME', value: "${env.BRANCH_NAME}"]]
+            }
+        }
+    
+}
+post {
+        success {
+            emailext  attachmentsPattern: '**/report.json',
+                            body: 'Success Report',
+                subject: 'Report Generated Successfully..',
+                to: 'shubham.tamboli@bfctech.io'
+        }
+        failure {
+            emailext  attachmentsPattern: '**/report.json',
+            body: 'Failed Report',
+                subject: 'Failed..',
+                to: 'shubham.tamboli@bfctech.io'
+        }
+    }
+}
