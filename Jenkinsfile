@@ -52,14 +52,6 @@ pipeline{
         withEnv(["PATH+GO=${GOPATH}/bin"]){
           dir('cart/src'){
            sh '''
-              echo 'Running vetting'
-              //go vet $(go list ./... | grep -v generated)
-              echo 'Running linting'
-              //golint $(go list ./... | grep -v generated)
-              echo 'Running go formatting'
-              //go fmt $(go list ./... | grep -v generated)
-              echo 'Running gosec'
-              //gosec -fmt=sonarqube -out report.json ./...
               echo 'Sending reports to the sonarqube'
               sonar-scanner
            '''
