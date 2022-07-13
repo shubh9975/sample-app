@@ -2,8 +2,8 @@ package main
 import (
 	"fmt"
 
-	//"cart/src/mypkg"
-	"test/mypkg"
+	"cart/src/mypkg"
+	//"test/mypkg"
 )
 
 func main() {
