@@ -1,11 +1,14 @@
 pipeline{
   agent any
-  stages {
-    stage("Hello Calsoft"){
-        //Cleaning WorkSpace
-     steps{
-        echo "Hello calsoft"
+  stages{
+   stage("Repo_clone"){
+       //Clone repo from GitHub
+     steps {
+          checkout ([$class: 'GitSCM', branches: [[name: '*/*']], userRemoteConfigs: [[credentialsId: 'shubham', url: 'git@github.com:shubh9975/sample-app.git']]])
+	  }
+   }	  
+   stage("Hello Calsoft"){
+     step echo "Hello Everyone"
      }
-   }
-}
+  } 
 }
