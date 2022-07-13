@@ -63,7 +63,7 @@ pipeline{
         script{
 	  dir('cart/'){
           sh '''
-	      sudo docker build -t myimage cart/Dockerfile
+	      sudo docker build -t myimage .
 	  '''
 	  }
         }
