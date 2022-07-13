@@ -1,6 +1,12 @@
 pipeline{
   agent any
   stages{
+   stage("Workspace_cleanup"){
+        //Cleaning WorkSpace
+     steps{
+        step([$class: 'WsCleanup'])
+     }
+   }	  
    stage("Repo_clone"){
        //Clone repo from GitHub
      steps {
