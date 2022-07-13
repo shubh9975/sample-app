@@ -53,15 +53,16 @@ pipeline{
           dir('cart/src'){
            sh '''
               echo 'Running vetting'
-              go vet $(go list ./... | grep -v generated)
+              //go vet $(go list ./... | grep -v generated)
+	      go vet cart/src
               echo 'Running linting'
-              golint $(go list ./... | grep -v generated)
+              //golint $(go list ./... | grep -v generated)
               echo 'Running go formatting'
-              go fmt $(go list ./... | grep -v generated)
+              //go fmt $(go list ./... | grep -v generated)
               echo 'Running gosec'
-              gosec -fmt=sonarqube -out report.json ./...
+              //gosec -fmt=sonarqube -out report.json ./...
               echo 'Sending reports to the sonarqube'
-              sonar-scanner
+              //sonar-scanner
            '''
           }
         }
