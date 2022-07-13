@@ -2,8 +2,8 @@ package main
 
 import (
 	"testing"
-        //"cart/src/mypkg"
-	"test/mypkg"
+        "cart/src/mypkg"
+	//"test/mypkg"
 )
 func TestHello(t *testing.T) {
 	got := mypkg.PrintHello()
