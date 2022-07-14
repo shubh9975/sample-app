@@ -35,6 +35,7 @@ pipeline{
      steps {
         withEnv(["PATH+GO=${GOPATH}/bin"]){
            sh '''
+	      export GO111MODULE="on"
               sudo docker system prune -f
               echo 'Installing dependencies'
               go version
