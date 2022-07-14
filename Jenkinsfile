@@ -40,10 +40,10 @@ pipeline{
               echo 'Installing dependencies'
               go version
 	      go mod init cart/src
-              go get -u golang.org/x/lint/golint
-              go install github.com/securego/gosec/v2/cmd/gosec@latest
+              #go get -u golang.org/x/lint/golint
+              #go install github.com/securego/gosec/v2/cmd/gosec@latest
               #go get -u github.com/securego/gosec/cmd/gosec
-              export PATH="/usr/local/sonar-scanner/bin:$PATH"
+              #export PATH="/usr/local/sonar-scanner/bin:$PATH"
            '''
         }
      }
