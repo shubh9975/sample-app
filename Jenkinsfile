@@ -9,7 +9,8 @@ pipeline{
     BASE_DIR = "${pwd}"
     GO114MODULE = 'on'
     CGO_ENABLED = 0
-    GOPATH = "${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${BUILD_ID}"
+    GOPATH = "/var/lib/jenkins/sample-ap/sample-app/cart/src"
+    //GOPATH = "${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${BUILD_ID}"
     EMAIL="shubham.tamboli1@gmail.com"
     TAG= "v1.1.1"
   }
@@ -50,15 +51,15 @@ pipeline{
    }
    stage("static analysis"){
      steps{
-        //withEnv(["PATH+GO=${GOPATH}/bin"]){
-        //  dir('cart/src'){
+        withEnv(["${GOPATH}"]){
+          dir('cart/src'){
            sh '''
 	     echo "Performing the Testcase on our code"
 	     #go cart/src/ test -v
              go run cart/src/main.go
            '''
-          //}
-       // }
+           }
+        }
      }
    }
    stage("Image Building"){
