@@ -53,8 +53,8 @@ pipeline{
           dir('cart/src'){
            sh '''
 	     echo "Performing the Testcase on our code"
-	     go env -w GO111MODULE=off
 	     go test -v
+             go run main.go
            '''
           }
         }
