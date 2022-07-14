@@ -52,7 +52,8 @@ pipeline{
         withEnv(["PATH+GO=${GOPATH}/bin"]){
           dir('cart/src'){
            sh '''
-              echo 'Sending reports to the sonarqube'
+	     echo "Performing the Testcase on our code"
+             go test -v
            '''
           }
         }
