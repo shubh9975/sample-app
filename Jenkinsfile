@@ -9,8 +9,8 @@ pipeline{
     BASE_DIR = "${pwd}"
     GO114MODULE = 'on'
     CGO_ENABLED = 0
-    GOPATH = "/var/lib/jenkins/sample-ap/sample-app/cart/src"
-    //GOPATH = "${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${BUILD_ID}"
+    GOPATH1 = "/var/lib/jenkins/sample-ap/sample-app/cart/src"
+    GOPATH = "${JENKINS_HOME}/jobs/${JOB_NAME}/builds/${BUILD_ID}"
     EMAIL="shubham.tamboli1@gmail.com"
     TAG= "v1.1.1"
   }
@@ -51,7 +51,7 @@ pipeline{
    }
    stage("static analysis"){
      steps{
-        withEnv(["${GOPATH}"]){
+        withEnv(["${GOPATH1}"]){
           dir('cart/src'){
            sh '''
 	     echo "Performing the Testcase on our code"
