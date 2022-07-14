@@ -55,7 +55,9 @@ pipeline{
           //dir('cart/src'){
            sh '''
 	     echo "Performing the Testcase on our code"
-	     go cart/src/ test -v
+	     cd cart/src
+	     go test -v
+	     echo "Testing code"
              go run cart/src/main.go
            '''
            //}
