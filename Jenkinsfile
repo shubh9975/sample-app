@@ -50,14 +50,14 @@ pipeline{
    }
    stage("static analysis"){
      steps{
-        #withEnv(["PATH+GO=${GOPATH}/bin"]){
+        //withEnv(["PATH+GO=${GOPATH}/bin"]){
           dir('cart/src'){
            sh '''
 	     echo "Performing the Testcase on our code"
 	     go test -v
              go run main.go
            '''
-          #}
+          //}
         }
      }
    }
